@@ -11,7 +11,7 @@ A phone budgeting app for Israel and Kehinde. Type or speak what you bought ("Wa
 
 1. Create a new Google Sheet named **Akinlabi Family Budget**.
 2. In the sheet, open **Extensions > Apps Script**. Delete what is there and paste everything from [`apps-script/Code.gs`](apps-script/Code.gs).
-3. On line 15, change `'CHANGE-ME'` to your own family code (a phrase only the two of you know, such as `'Akin-Home-2026'`). Click **Save**.
+3. On line 14, change `'CHANGE-ME'` to your own family code (a phrase only the two of you know, such as `'Akin-Home-2026'`). Click **Save**.
 4. Click **Deploy > New deployment**. Click the gear next to "Select type" and choose **Web app**.
    - Execute as: **Me**
    - Who has access: **Anyone**
