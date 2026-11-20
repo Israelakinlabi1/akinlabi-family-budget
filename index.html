@@ -13,8 +13,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap" rel="stylesheet">
 <style>
-:root{color-scheme:light dark;--bg:#fff;--ink:#0b0b10;--mute:#596069;--line:#e2e7e9;--mist:#eafaf2;--card:#fff;--band:#00a862;--g:#00874f;--red:#c62828}
-@media(prefers-color-scheme:dark){:root{--bg:#07130d;--ink:#e9f5ee;--mute:#9fb5a9;--line:#1c3427;--mist:#0d2217;--card:#0a1a11;--band:#0a6d43;--g:#3fd08f;--red:#ff7d72}}
+:root{color-scheme:light dark;--sav:#a86b00;--bg:#fff;--ink:#0b0b10;--mute:#596069;--line:#e2e7e9;--mist:#eafaf2;--card:#fff;--band:#00a862;--g:#00874f;--red:#c62828}
+@media(prefers-color-scheme:dark){:root{--bg:#07130d;--ink:#e9f5ee;--mute:#9fb5a9;--line:#1c3427;--mist:#0d2217;--card:#0a1a11;--band:#0a6d43;--g:#3fd08f;--red:#ff7d72;--sav:#ffd25e}}
 *{box-sizing:border-box;min-width:0}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,-apple-system,sans-serif;overflow-x:clip}
@@ -34,8 +34,8 @@ h2{font-size:22px;margin:0 0 12px;line-height:1.2}
 .big{font-size:clamp(44px,13vw,72px);line-height:1.05;margin:16px 0 2px;white-space:nowrap}
 .biglbl{opacity:.92;font-size:15px}
 .meter{height:10px;border-radius:6px;background:rgba(255,255,255,.28);margin:16px 0 10px;overflow:hidden}
-.meter i{display:block;height:100%;background:#fff;border-radius:6px;transition:width .4s}
-.meter.over i{background:#ffd5d0}
+.meter{display:flex}.meter i{display:block;height:100%;background:#fff;transition:width .4s}.meter i.s{background:#ffd25e}
+.meter.over i:first-child{background:#ffd5d0}
 .figs{display:flex;flex-wrap:wrap;gap:4px 22px;font-size:15px}
 .figs b{font-family:"Space Grotesk";font-weight:500;font-size:18px;white-space:nowrap}
 .who-line{margin-top:6px;font-size:14px;opacity:.92}
@@ -75,7 +75,7 @@ ul.list{list-style:none;margin:0;padding:0}
 .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:12px 0;border-bottom:1px solid var(--line)}
 .row b{font-weight:600}
 .amt{font-family:"Space Grotesk";font-size:18px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
-.amt.inc{color:var(--g)}
+.amt.inc{color:var(--g)}.amt.savc{color:var(--sav)}.bar.sav i{background:var(--sav)}
 .chip{display:inline-block;font-size:13px;background:var(--mist);border-radius:999px;padding:1px 9px;margin-right:6px}
 .pend{font-size:12px;color:var(--mute)}
 .ract{grid-column:1/-1;display:flex;gap:18px}
@@ -134,15 +134,15 @@ ol.steps{padding-left:20px;margin:8px 0 0}ol.steps li{margin-bottom:6px}
   </div>
   <div class="big num" id="left">$0.00</div>
   <div class="biglbl" id="leftlbl">left this month</div>
-  <div class="meter" id="meter"><i style="width:0"></i></div>
-  <div class="figs"><span>Income <b id="inc">$0.00</b></span><span>Spent <b id="exp">$0.00</b></span><span id="budgeted"></span></div>
+  <div class="meter" id="meter"><i style="width:0"></i><i class="s" style="width:0"></i></div>
+  <div class="figs"><span>Income <b id="inc">$0.00</b></span><span>Spent <b id="exp">$0.00</b></span><span>Saved <b id="sav">$0.00</b></span><span id="budgeted"></span></div>
   <div class="who-line" id="whoLine"></div>
 </div></div>
 
 <main class="wrap">
 <section>
-  <h2>Add spending or income</h2>
-  <label for="ta" class="sub">Type it or speak it. Example: "Walmart today, rice, eggs, milk and motor oil, total 64.30"</label>
+  <h2>Add spending, income or savings</h2>
+  <label for="ta" class="sub">Type it or speak it. Examples: "Walmart today, rice, eggs, milk and motor oil, total 64.30" or "Moved 200 to savings"</label>
   <textarea id="ta" style="margin-top:8px" placeholder="What did you buy or earn?"></textarea>
   <div class="partial" id="partial"></div>
   <div class="btns">
@@ -167,6 +167,12 @@ ol.steps{padding-left:20px;margin:8px 0 0}ol.steps li{margin-bottom:6px}
     <div class="cats" id="limlist"></div>
     <div class="btns"><button class="btn pri" id="limsave">Save limits</button><button class="btn" id="limcancel">Cancel</button></div>
   </div>
+</section>
+
+<section id="savSec" hidden>
+  <h2>Savings</h2>
+  <div id="savGoal"></div>
+  <div class="cats" id="savCats" style="margin-top:14px;gap:8px"></div>
 </section>
 
 <section style="border:0">

@@ -6,8 +6,10 @@
   const EXPENSE = ["Groceries", "Dining out", "Gas (fuel)", "Car maintenance", "Electricity",
     "Water, heat & trash", "Rent & housing", "Phone & internet", "Household items", "Health & pharmacy",
     "Giving & tithe", "Clothing", "Personal care", "Kids & family", "Travel", "Education & work",
-    "Subscriptions", "Gifts", "Fees & bank", "Other"];
+    "Subscriptions", "Gifts", "Family support (sent home)", "Fees & bank", "Other"];
   const INCOME = ["Stipend & salary", "Side income", "Refund", "Gift received", "Other income"];
+  const SAVINGS = ["Emergency fund", "General savings", "Retirement", "Big purchase / goal"];
+  const SAVE_RE = /\b(savings?|saved|save|saving|emergency fund|rainy day|roth|ira|401\s?\(?k\)?|403\s?\(?b\)?|retirement|invest(ed|ing|ment)?)\b/i;
 
   /* Order matters: the first pattern that matches wins. */
   const ITEM_RULES = [
@@ -28,7 +30,8 @@
     ["Travel", /flight|airfare|airline|hotel|airbnb|uber|lyft|bus ticket|train ticket|parking|toll/i],
     ["Education & work", /textbook|book|tuition|course|conference|registration|printing|stationery|notebook|laptop|software|membership dues|application fee/i],
     ["Gifts", /gift|present for|birthday card/i],
-    ["Fees & bank", /bank fee|atm fee|overdraft|late fee|service charge|wire fee|transfer fee|western union|remit/i],
+    ["Family support (sent home)", /\bsen[dt]\b.*\b(home|nigeria|parents|mum|mom|dad|family|siblings?)\b|family support|for (my |our )?(parents|mum|mom|dad|family) (back )?home|remit/i],
+    ["Fees & bank", /bank fee|atm fee|overdraft|late fee|service charge|wire fee|transfer fee/i],
     ["Groceries", /grocer|rice|beans|egg|milk|bread|butter|cheese|yogh?urt|cereal|oats|flour|sugar|salt|vegetable oil|cooking oil|palm oil|olive oil|\boil\b|meat|chicken|turkey|beef|goat|pork|fish|stock ?fish|crayfish|shrimp|sardine|tuna|vegetable|veggies|spinach|ugu|tomato|onion|pepper|potato|plantain|yam|garri|gari|fufu|semo|semolina|poundo|egusi|ogbono|maggi|seasoning|curry|thyme|indomie|noodle|pasta|spaghetti|fruit|apple|banana|orange|grape|water bottles?|juice|soda|snack|chips|cookies|biscuit|frozen|ice cream|corn|lettuce|carrot|cabbage|garlic|ginger|food/i],
   ];
 
@@ -166,10 +169,22 @@
     const tn = t.replace(/\b(?:on\s+)?(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+\d{1,2}(?:st|nd|rd|th)?\b/gi, " ")
       .replace(/\b(?:on\s+)?(?:the\s+)?\d{1,2}(?:st|nd|rd|th)?\s+(?:of\s+)?(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\b/gi, " ")
       .replace(/\b(?:on\s+)?\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b/g, " ");
-    const income = INCOME_RE.test(t) && !/\b(bought|buy|paid for|spent)\b/i.test(t);
+    const saving = SAVE_RE.test(t) && !/\b(bought|buy|paid for|spent|saved \S+ on|saved on)\b/i.test(t);
+    const income = !saving && INCOME_RE.test(t) && !/\b(bought|buy|paid for|spent)\b/i.test(t);
 
     const totalM = tn.match(new RegExp(String.raw`\b(?:total(?:\s+(?:is|was|of|came to))?|altogether|all together|in total|came to|comes to|cost me|it cost|everything (?:was|cost)|sum of)\b[^\d$]{0,12}` + AMT, "i"));
     let total = totalM ? money(totalM[1]) : null;
+
+    if (saving) {
+      const nums = [...tn.matchAll(new RegExp(AMT, "g"))].map(m => money(m[1])).filter(n => n != null && n > 0 && !(n >= 400 && n <= 404 && /40[13]\s?\(?[kb]/i.test(t)));
+      const amount = total != null ? total : nums.length ? Math.max(...nums) : null;
+      const category = /emergency|rainy day/i.test(t) ? "Emergency fund"
+        : /roth|ira|401\s?\(?k|403\s?\(?b|retirement|pension/i.test(t) ? "Retirement"
+        : /\bfor (a |the |our |my )?(new )?(car|house|home|trip|travel|laptop|phone|wedding|baby|rent deposit|tuition|christmas|vacation|holiday)|goal|towards?/i.test(t) ? "Big purchase / goal"
+        : "General savings";
+      const where = (t.match(/\b(?:in|into|to)\s+(?:my |our |the )?([A-Z][\w&' ]{1,30}?)(?:\s+(?:account|savings))?\b(?=[,.]|$)/) || [])[1] || "";
+      return [{ type: "saved", date, store: store || (/^(savings?|emergency fund|retirement)$/i.test(where) ? "" : where), category, amount, items: [], note: raw.slice(0, 200) }];
+    }
 
     if (income) {
       const nums = [...tn.matchAll(new RegExp(AMT, "g"))].map(m => money(m[1])).filter(n => n != null && n > 0);
@@ -248,6 +263,6 @@
     return [{ type: "expense", date, store, category, amount, items: cleanItems, note: "" }];
   }
 
-  const api = { parse, wordsToNumbers, categorize, findDate, EXPENSE, INCOME };
+  const api = { parse, wordsToNumbers, categorize, findDate, EXPENSE, INCOME, SAVINGS };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.BudgetParse = api;
 })(this);

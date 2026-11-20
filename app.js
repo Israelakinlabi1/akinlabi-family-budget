@@ -2,7 +2,11 @@
 (() => {
 "use strict";
 const PEOPLE = ["Israel", "Kehinde"];
-const { parse, EXPENSE: EXP, INCOME: INC } = window.BudgetParse;
+const { parse, EXPENSE: EXP, INCOME: INC, SAVINGS: SAV } = window.BudgetParse;
+const GOAL = "Savings goal";
+/* "saved" entries also recognised by category, so they display right even before the sheet script is updated */
+const typeOf = e => e.type === "income" ? "income" : (e.type === "saved" || SAV.includes(e.category)) ? "saved" : "expense";
+const catsFor = t => t === "income" ? INC : t === "saved" ? SAV : EXP;
 
 const $ = s => document.querySelector(s);
 const pad = n => String(n).padStart(2, "0");
@@ -91,7 +95,7 @@ async function sync() {
     const sent = new Map(changes.map(c => [c.id, c.updatedAt]));
     outbox = outbox.filter(id => entries[id] && entries[id].updatedAt !== sent.get(id));
     const map = {};
-    for (const e of j.entries || []) map[e.id] = e;
+    for (const e of j.entries || []) map[e.id] = { ...e, type: typeOf(e) };
     for (const id of outbox) map[id] = entries[id];
     entries = map;
     if (sentLimits && sentLimits === JSON.stringify(limits)) limitsDirty = false;
@@ -115,29 +119,40 @@ setInterval(() => { if (document.visibilityState === "visible" && !$("#app").hid
 function render() {
   $("#mlabel").textContent = mlabel(month);
   const mine = live().filter(e => (e.date || "").slice(0, 7) === month);
-  const inc = mine.filter(e => e.type === "income").reduce((a, e) => a + (+e.amount || 0), 0);
-  const exp = mine.filter(e => e.type !== "income").reduce((a, e) => a + (+e.amount || 0), 0);
-  const left = inc - exp;
-  $("#inc").textContent = fmt(inc); $("#exp").textContent = fmt(exp);
+  const sum = t => mine.filter(e => typeOf(e) === t).reduce((a, e) => a + (+e.amount || 0), 0);
+  const inc = sum("income"), exp = sum("expense"), sav = sum("saved");
+  const left = inc - exp - sav;
+  $("#inc").textContent = fmt(inc); $("#exp").textContent = fmt(exp); $("#sav").textContent = fmt(sav);
   $("#left").textContent = inc ? fmt(left) : fmt(exp);
-  $("#leftlbl").textContent = inc ? (left < 0 ? "over your income this month" : "left this month") : "spent this month (add income to see what's left)";
-  const m = $("#meter"); m.firstElementChild.style.width = (inc ? Math.min(100, exp / inc * 100) : 0) + "%"; m.classList.toggle("over", inc > 0 && exp > inc);
-  const lim = Object.values(limits).reduce((a, v) => a + (+v || 0), 0);
+  $("#leftlbl").textContent = inc ? (left < 0 ? "over your income this month" : "left this month, after spending and savings") : "spent this month (add income to see what's left)";
+  const m = $("#meter"), pe = inc ? Math.min(100, exp / inc * 100) : 0, ps = inc ? Math.min(100 - pe, sav / inc * 100) : 0;
+  m.children[0].style.width = pe + "%"; m.children[1].style.width = ps + "%"; m.classList.toggle("over", inc > 0 && exp + sav > inc);
+  const lim = Object.keys(limits).filter(k => k !== GOAL).reduce((a, k) => a + (+limits[k] || 0), 0);
   $("#budgeted").innerHTML = lim ? "Budgeted <b>" + fmt(lim) + "</b>" : "";
   const byWho = {};
-  mine.filter(e => e.type !== "income").forEach(e => byWho[e.who] = (byWho[e.who] || 0) + (+e.amount || 0));
+  mine.filter(e => typeOf(e) === "expense").forEach(e => byWho[e.who] = (byWho[e.who] || 0) + (+e.amount || 0));
   $("#whoLine").textContent = Object.keys(byWho).length ? Object.keys(byWho).map(w => (w || "Someone") + " spent " + fmt(byWho[w])).join(" · ") : "";
-  renderCats(mine, exp); renderFilter(); renderActs(mine); syncLabel();
+  renderCats(mine, exp); renderSavings(mine, sav); renderFilter(); renderActs(mine); syncLabel();
 }
 function renderCats(mine, total) {
   const by = {};
-  mine.filter(e => e.type !== "income").forEach(e => by[e.category] = (by[e.category] || 0) + (+e.amount || 0));
+  mine.filter(e => typeOf(e) === "expense").forEach(e => by[e.category] = (by[e.category] || 0) + (+e.amount || 0));
   const list = EXP.filter(c => by[c] || limits[c]).sort((a, b) => (by[b] || 0) - (by[a] || 0)).concat(Object.keys(by).filter(c => !EXP.includes(c)));
   $("#cats").innerHTML = list.length ? list.map(c => {
     const s = by[c] || 0, l = +limits[c] || 0, over = l && s > l, w = l ? Math.min(100, s / l * 100) : (total ? s / total * 100 : 0);
     return `<div class="cat"><div class="top"><span>${esc(c)}</span><span>${fmt(s)}${l ? ` <span class="sub">of ${fmt(l)}</span>` : ""}</span></div><div class="bar${over ? " over" : ""}"><i style="width:${w}%"></i></div>${over ? `<div class="sub" style="color:var(--red)">${fmt(s - l)} over</div>` : ""}</div>`;
   }).join("") : `<div class="empty">Nothing spent yet in ${esc(mlabel(month))}.</div>`;
   $("#cats").hidden = editLim; $("#limits").hidden = !editLim;
+}
+function renderSavings(mine, sav) {
+  const goal = +limits[GOAL] || 0;
+  const by = {};
+  mine.filter(e => typeOf(e) === "saved").forEach(e => by[e.category] = (by[e.category] || 0) + (+e.amount || 0));
+  $("#savSec").hidden = !sav && !goal;
+  $("#savGoal").innerHTML = goal
+    ? `<div class="cat"><div class="top"><span>Saved this month</span><span>${fmt(sav)} <span class="sub">of ${fmt(goal)} goal</span></span></div><div class="bar sav"><i style="width:${Math.min(100, sav / goal * 100)}%"></i></div><div class="sub">${sav >= goal ? "Goal reached." : fmt(goal - sav) + " to go."}</div></div>`
+    : `<div class="sub">Saved ${fmt(sav)} this month. Set a monthly savings goal under "Set monthly limits".</div>`;
+  $("#savCats").innerHTML = SAV.filter(c => by[c]).map(c => `<div class="top" style="display:flex;justify-content:space-between;font-size:15px"><span>${esc(c)}</span><span style="white-space:nowrap">${fmt(by[c])}</span></div>`).join("");
 }
 function renderFilter() {
   const opts = [["", "Everyone"], ...PEOPLE.map(p => [p, p])];
@@ -152,8 +167,8 @@ function renderActs(mine) {
   for (const e of s) {
     if (e.date !== last) { last = e.date; const d = new Date(e.date + "T12:00"); h += `<li class="day">${esc(d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }))}</li>`; }
     const items = itemsText(e.items);
-    const verb = e.type === "income" ? "received" : "spent";
-    h += `<li class="row" data-id="${esc(e.id)}"><div><b>${esc(e.who || "Someone")}</b> ${verb}${e.store ? " · " + esc(e.store) : ""}<div class="sub"><span class="chip">${esc(e.category)}</span>${esc(items || e.note || "")}</div>${pending.has(e.id) ? `<div class="pend">Saved on this phone, not synced yet</div>` : ""}</div><div class="amt${e.type === "income" ? " inc" : ""}">${e.type === "income" ? "+" : "−"}${fmt(e.amount)}</div><div class="ract"><button class="lnk" data-a="edit">Edit</button><button class="lnk red" data-a="del">Delete</button></div></li>`;
+    const ty = typeOf(e), verb = ty === "income" ? "received" : ty === "saved" ? "saved" : "spent";
+    h += `<li class="row" data-id="${esc(e.id)}"><div><b>${esc(e.who || "Someone")}</b> ${verb}${e.store ? " · " + esc(e.store) : ""}<div class="sub"><span class="chip">${esc(e.category)}</span>${esc(items || e.note || "")}</div>${pending.has(e.id) ? `<div class="pend">Saved on this phone, not synced yet</div>` : ""}</div><div class="amt${ty === "income" ? " inc" : ty === "saved" ? " savc" : ""}">${ty === "income" ? "+" : ty === "saved" ? "" : "−"}${fmt(e.amount)}</div><div class="ract"><button class="lnk" data-a="edit">Edit</button><button class="lnk red" data-a="del">Delete</button></div></li>`;
   }
   $("#acts").innerHTML = h || `<li class="empty">No entries${filterWho ? " from " + esc(filterWho) : ""} for ${esc(mlabel(month))} yet.</li>`;
 }
@@ -181,14 +196,14 @@ function openReview(rows, id) {
 }
 function drawReview() {
   $("#rvlist").innerHTML = draft.map((r, i) => {
-    const cats = r.type === "income" ? INC : EXP;
+    const ty = r.type === "income" || r.type === "saved" ? r.type : "expense", cats = catsFor(ty);
     return `<div class="rv" data-i="${i}">
-    <div class="g3"><select data-f="type" aria-label="Type"><option value="expense"${r.type !== "income" ? " selected" : ""}>Spent</option><option value="income"${r.type === "income" ? " selected" : ""}>Income</option></select>
-    <input class="store" data-f="store" placeholder="${r.type === "income" ? "Source" : "Store or biller"}" value="${esc(r.store)}" aria-label="Store">
+    <div class="g3"><select data-f="type" aria-label="Type"><option value="expense"${ty === "expense" ? " selected" : ""}>Spent</option><option value="income"${ty === "income" ? " selected" : ""}>Income</option><option value="saved"${ty === "saved" ? " selected" : ""}>Saved</option></select>
+    <input class="store" data-f="store" placeholder="${ty === "income" ? "Source" : ty === "saved" ? "Bank or account (optional)" : "Store or biller"}" value="${esc(r.store)}" aria-label="Store">
     <input data-f="date" type="date" value="${esc(r.date)}" aria-label="Date"></div>
     <div class="g2"><select data-f="category" aria-label="Category">${cats.map(c => `<option${c === r.category ? " selected" : ""}>${esc(c)}</option>`).join("")}</select>
     <input data-f="amount" inputmode="decimal" placeholder="Amount $" value="${r.amount != null ? Number(r.amount).toFixed(2) : ""}" aria-label="Amount"></div>
-    <input data-f="items" placeholder="${r.type === "income" ? "Note (optional)" : "Items, comma separated (optional)"}" value="${esc(itemsText(r.items) || r.note || "")}" aria-label="Items">
+    <input data-f="items" placeholder="${ty === "expense" ? "Items, comma separated (optional)" : "Note (optional)"}" value="${esc(itemsText(r.items) || r.note || "")}" aria-label="Items">
     <div class="g2"><select data-f="who" aria-label="Who">${PEOPLE.map(p => `<option${p === r.who ? " selected" : ""}>${esc(p)}</option>`).join("")}</select>
     ${draft.length > 1 ? `<button class="lnk red" data-rm="${i}" style="justify-self:end">Remove line</button>` : "<span></span>"}</div></div>`;
   }).join("");
@@ -196,11 +211,11 @@ function drawReview() {
 function readReview() {
   return [...document.querySelectorAll(".rv")].map(el => {
     const g = f => el.querySelector(`[data-f="${f}"]`).value;
-    const inc = g("type") === "income";
+    const inc = g("type") !== "expense";
     return { type: g("type"), store: g("store").trim(), date: g("date") || today(), category: g("category"), amount: num(g("amount")), items: inc ? [] : parseItems(g("items")), note: inc ? g("items").trim().slice(0, 200) : "", who: g("who") };
   });
 }
-$("#rvlist").addEventListener("change", e => { if (e.target.dataset.f === "type") { draft = readReview(); const r = draft[+e.target.closest(".rv").dataset.i]; r.category = (r.type === "income" ? INC : EXP)[0]; drawReview(); } });
+$("#rvlist").addEventListener("change", e => { if (e.target.dataset.f === "type") { draft = readReview(); const r = draft[+e.target.closest(".rv").dataset.i]; r.category = catsFor(r.type)[0]; drawReview(); } });
 $("#rvlist").addEventListener("click", e => { const i = e.target.dataset.rm; if (i != null) { draft = readReview(); draft.splice(+i, 1); drawReview(); } });
 $("#addrow").onclick = () => { draft = readReview(); draft.push({ ...blank(), store: draft[0] ? draft[0].store : "", who: cfg.me }); drawReview(); };
 $("#cancel").onclick = () => { $("#review").hidden = true; draft = []; editing = null; stat($("#pstat"), ""); };
@@ -234,13 +249,13 @@ $("#acts").addEventListener("click", e => {
 $("#csv").onclick = async () => {
   const q = v => '"' + String(v ?? "").replace(/"/g, '""') + '"';
   const mine = live().filter(e => (e.date || "").slice(0, 7) === month);
-  const rows = [["Date", "Who", "Type", "Store", "Category", "Amount", "Items"], ...mine.map(e => [e.date, e.who, e.type, e.store, e.category, (+e.amount || 0).toFixed(2), itemsText(e.items)])];
+  const rows = [["Date", "Who", "Type", "Store", "Category", "Amount", "Items"], ...mine.map(e => [e.date, e.who, typeOf(e), e.store, e.category, (+e.amount || 0).toFixed(2), itemsText(e.items)])];
   try { await navigator.clipboard.writeText(rows.map(r => r.map(q).join(",")).join("\n")); stat($("#dstat"), "Copied. Paste it into Excel or Google Sheets."); }
   catch (_) { stat($("#dstat"), "Copy isn't available here. Your Google Sheet has every entry too.", true); }
 };
 
 /* ---------- limits ---------- */
-$("#limbtn").onclick = () => { editLim = !editLim; $("#limlist").innerHTML = EXP.map(c => `<label class="limrow"><span>${esc(c)}</span><input inputmode="decimal" data-c="${esc(c)}" placeholder="No limit" value="${limits[c] ? (+limits[c]).toFixed(0) : ""}"></label>`).join(""); render(); };
+$("#limbtn").onclick = () => { editLim = !editLim; $("#limlist").innerHTML = `<label class="limrow"><span><b>Monthly savings goal</b></span><input inputmode="decimal" data-c="${GOAL}" placeholder="No goal" value="${limits[GOAL] ? (+limits[GOAL]).toFixed(0) : ""}"></label>` + EXP.map(c => `<label class="limrow"><span>${esc(c)}</span><input inputmode="decimal" data-c="${esc(c)}" placeholder="No limit" value="${limits[c] ? (+limits[c]).toFixed(0) : ""}"></label>`).join(""); render(); };
 $("#limcancel").onclick = () => { editLim = false; render(); };
 $("#limsave").onclick = () => {
   const l = {}; document.querySelectorAll("#limlist input").forEach(i => { const n = num(i.value); if (n > 0) l[i.dataset.c] = n; });

@@ -5,6 +5,7 @@ A phone budgeting app for Israel and Kehinde. Type or speak what you bought ("Wa
 - No Claude or other AI service. Sorting into categories happens on the phone.
 - Works offline. Entries wait on the phone and sync when the internet is back.
 - Voice uses the phone's own speech recognition. If the Speak button doesn't work, the microphone key on the keyboard always does.
+- Savings ("Moved 200 to savings", "Put 100 into Roth IRA") are tracked separately from spending, with a monthly savings goal. What's left = income − spending − savings.
 - The money data lives only in our Google Sheet, not in this repository.
 
 ## One-time setup (about 10 minutes, on a computer)

@@ -81,7 +81,7 @@ function upsert_(sh, changes) {
       : String(ch.items || '');
     const row = [
       /^\d{4}-\d{2}-\d{2}$/.test(ch.date) ? ch.date : Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'),
-      txt_(ch.who, 40), ch.type === 'income' ? 'income' : 'expense', txt_(ch.store, 80), txt_(ch.category, 40),
+      txt_(ch.who, 40), ch.type === 'income' || ch.type === 'saved' ? ch.type : 'expense', txt_(ch.store, 80), txt_(ch.category, 40),
       amount, txt_(items, 1000), txt_(ch.note, 300), String(ch.id),
       Number(ch.createdAt) || Date.now(), Number(ch.updatedAt) || Date.now(), ch.deleted ? 'yes' : ''
     ];
@@ -117,7 +117,7 @@ function readAll_(sh) {
         return m ? { name: m[1], amount: Number(m[2]) } : { name: s, amount: null };
       });
       return {
-        id: String(r[C.id]), date: d, who: String(r[C.who]), type: r[C.type] === 'income' ? 'income' : 'expense',
+        id: String(r[C.id]), date: d, who: String(r[C.who]), type: r[C.type] === 'income' || r[C.type] === 'saved' ? r[C.type] : 'expense',
         store: String(r[C.store]).replace(/^'/, ''), category: String(r[C.category]), amount: Number(r[C.amount]) || 0,
         items: items, note: String(r[C.note]).replace(/^'/, ''), createdAt: Number(r[C.created]) || 0, updatedAt: Number(r[C.updated]) || 0
       };
