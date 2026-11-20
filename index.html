@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Akinlabi Family Budget</title>
+<meta name="theme-color" content="#00a862">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Family Budget">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light dark;--bg:#fff;--ink:#0b0b10;--mute:#596069;--line:#e2e7e9;--mist:#eafaf2;--card:#fff;--band:#00a862;--g:#00874f;--red:#c62828}
+@media(prefers-color-scheme:dark){:root{--bg:#07130d;--ink:#e9f5ee;--mute:#9fb5a9;--line:#1c3427;--mist:#0d2217;--card:#0a1a11;--band:#0a6d43;--g:#3fd08f;--red:#ff7d72}}
+*{box-sizing:border-box;min-width:0}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,-apple-system,sans-serif;overflow-x:clip}
+.wrap{max-width:760px;margin:0 auto;padding:0 max(4vw,16px)}
+.num,h1,h2{font-family:"Space Grotesk",Inter,sans-serif;font-weight:500}
+h2{font-size:22px;margin:0 0 12px;line-height:1.2}
+[hidden]{display:none!important}
+.band{background:var(--band);color:#fff;padding:calc(12px + env(safe-area-inset-top)) 0 24px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:15px}
+.topbar .brand{font-family:"Space Grotesk";font-weight:600}
+.pill{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid rgba(255,255,255,.4);background:transparent;color:#fff;font:600 14px Inter;cursor:pointer}
+.dot{width:8px;height:8px;border-radius:50%;background:#fff;opacity:.5}
+.dot.ok{opacity:1;background:#b6ffd8}.dot.wait{opacity:1;background:#ffe08a}.dot.err{opacity:1;background:#ffb4ab}
+.mnav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:14px}
+.mnav h1{font-size:20px;margin:0}
+.ib{width:44px;height:44px;border-radius:12px;border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;font:600 20px Inter;cursor:pointer}
+.big{font-size:clamp(44px,13vw,72px);line-height:1.05;margin:16px 0 2px;white-space:nowrap}
+.biglbl{opacity:.92;font-size:15px}
+.meter{height:10px;border-radius:6px;background:rgba(255,255,255,.28);margin:16px 0 10px;overflow:hidden}
+.meter i{display:block;height:100%;background:#fff;border-radius:6px;transition:width .4s}
+.meter.over i{background:#ffd5d0}
+.figs{display:flex;flex-wrap:wrap;gap:4px 22px;font-size:15px}
+.figs b{font-family:"Space Grotesk";font-weight:500;font-size:18px;white-space:nowrap}
+.who-line{margin-top:6px;font-size:14px;opacity:.92}
+section{padding:24px 0;border-bottom:1px solid var(--line)}
+textarea,input,select{font:16px Inter,system-ui,sans-serif;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;width:100%}
+textarea{min-height:104px;resize:vertical}
+:focus-visible{outline:3px solid var(--g);outline-offset:2px}
+.btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.btn{min-height:44px;padding:0 18px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:600 16px Inter,sans-serif;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn.pri{background:var(--band);border-color:transparent;color:#fff}
+.btn.on{background:var(--red);border-color:transparent;color:#fff}
+.btn:disabled{opacity:.5;cursor:default}
+.btn svg{width:18px;height:18px}
+.btn.wide{width:100%}
+.hint,.sub{color:var(--mute);font-size:14px}
+.partial{color:var(--mute);font-style:italic;min-height:1.4em;font-size:15px;margin-top:6px}
+.status{font-size:14px;color:var(--mute);margin-top:8px}
+.status.err{color:var(--red)}
+.panel{background:var(--mist);border-radius:16px;padding:16px;margin-top:16px}
+.rv{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;display:grid;gap:8px}
+.g2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.g3{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(0,1fr);gap:8px}
+@media(max-width:520px){.g3{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.g3 .store{grid-column:1/-1}}
+.lnk{background:none;border:0;color:var(--g);font:600 15px Inter;cursor:pointer;padding:8px 0;min-height:44px}
+.lnk.red{color:var(--red)}
+.cats{display:grid;gap:14px}
+.cat .top{display:flex;justify-content:space-between;gap:10px;font-size:15px}
+.cat .top span:last-child{white-space:nowrap;font-variant-numeric:tabular-nums}
+.bar{height:8px;border-radius:5px;background:var(--mist);margin-top:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--g)}
+.bar.over i{background:var(--red)}
+.limrow{display:grid;grid-template-columns:minmax(0,1fr) 130px;gap:10px;align-items:center}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.chipbtn{min-height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:500 14px Inter;cursor:pointer}
+.chipbtn[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+ul.list{list-style:none;margin:0;padding:0}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.row b{font-weight:600}
+.amt{font-family:"Space Grotesk";font-size:18px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.amt.inc{color:var(--g)}
+.chip{display:inline-block;font-size:13px;background:var(--mist);border-radius:999px;padding:1px 9px;margin-right:6px}
+.pend{font-size:12px;color:var(--mute)}
+.ract{grid-column:1/-1;display:flex;gap:18px}
+.empty{color:var(--mute);padding:14px 0}
+.day{font-size:13px;color:var(--mute);margin:16px 0 0;font-weight:600}
+/* setup + settings */
+.screen{min-height:100vh;background:var(--bg);padding:calc(28px + env(safe-area-inset-top)) 0 40px}
+.hero{background:var(--band);color:#fff;border-radius:20px;padding:24px;margin-bottom:22px}
+.hero h1{font-size:clamp(30px,8vw,44px);line-height:1.05;margin:0 0 8px}
+.people{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.person{min-height:96px;border-radius:16px;border:2px solid var(--line);background:var(--card);color:var(--ink);font:600 20px "Space Grotesk",Inter;cursor:pointer}
+.person[aria-pressed=true]{border-color:var(--band);background:var(--mist)}
+label.f{display:grid;gap:6px;margin-top:14px;font-weight:500}
+ol.steps{padding-left:20px;margin:8px 0 0}ol.steps li{margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){.meter i{transition:none}}
+</style></head><body>
+
+<!-- First run: who are you -->
+<div class="screen" id="setup" hidden><div class="wrap">
+  <div class="hero"><h1>Akinlabi Family Budget</h1><div>Spending and income for the two of you, on your phones.</div></div>
+  <h2>Who is using this phone?</h2>
+  <div class="people" id="people"></div>
+  <p class="sub">Every entry made on this phone will be labelled with this name. You can switch later.</p>
+  <div id="connectStep" hidden>
+    <h2 style="margin-top:26px">Connect your Google Sheet</h2>
+    <p class="sub">This lets both phones share the same entries. You can skip it and connect later; entries are kept on this phone until then.</p>
+    <label class="f">Sheet link (Web app URL)<input id="setUrl" inputmode="url" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec"></label>
+    <label class="f">Family code<input id="setCode" autocomplete="off" placeholder="The secret phrase in your script"></label>
+    <div class="status" id="setStat"></div>
+    <div class="btns"><button class="btn pri" id="setGo">Connect</button><button class="btn" id="setSkip">Skip for now</button></div>
+  </div>
+</div></div>
+
+<!-- Settings -->
+<div class="screen" id="settings" hidden><div class="wrap">
+  <div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">Settings</h2><button class="btn" id="closeSet">Done</button></div>
+  <h2 style="margin-top:22px;font-size:18px">This phone belongs to</h2>
+  <div class="people" id="people2"></div>
+  <label class="f">Sheet link (Web app URL)<input id="cfgUrl" inputmode="url" autocomplete="off"></label>
+  <label class="f">Family code<input id="cfgCode" autocomplete="off"></label>
+  <label class="f">Voice language<select id="cfgLang"><option value="en-US">English (United States)</option><option value="en-NG">English (Nigeria)</option><option value="en-GB">English (United Kingdom)</option></select></label>
+  <div class="btns"><button class="btn pri" id="cfgSave">Save and sync</button></div>
+  <div class="status" id="cfgStat"></div>
+  <p class="sub" style="margin-top:24px">Add to home screen: on iPhone, open this page in Safari, tap Share, then "Add to Home Screen". On Android, open it in Chrome, tap the ⋮ menu, then "Add to Home screen" or "Install app".</p>
+</div></div>
+
+<!-- Main app -->
+<div id="app" hidden>
+<div class="band"><div class="wrap">
+  <div class="topbar"><span class="brand">Akinlabi Family Budget</span>
+    <span style="display:flex;gap:8px"><button class="pill" id="syncBtn" aria-label="Sync now"><span class="dot" id="dot"></span><span id="syncTxt">Sync</span></button><button class="pill" id="meBtn"></button></span></div>
+  <div class="mnav">
+    <button class="ib" id="prev" aria-label="Previous month">&#8249;</button>
+    <h1 id="mlabel">This month</h1>
+    <button class="ib" id="next" aria-label="Next month">&#8250;</button>
+  </div>
+  <div class="big num" id="left">$0.00</div>
+  <div class="biglbl" id="leftlbl">left this month</div>
+  <div class="meter" id="meter"><i style="width:0"></i></div>
+  <div class="figs"><span>Income <b id="inc">$0.00</b></span><span>Spent <b id="exp">$0.00</b></span><span id="budgeted"></span></div>
+  <div class="who-line" id="whoLine"></div>
+</div></div>
+
+<main class="wrap">
+<section>
+  <h2>Add spending or income</h2>
+  <label for="ta" class="sub">Type it or speak it. Example: "Walmart today, rice, eggs, milk and motor oil, total 64.30"</label>
+  <textarea id="ta" style="margin-top:8px" placeholder="What did you buy or earn?"></textarea>
+  <div class="partial" id="partial"></div>
+  <div class="btns">
+    <button class="btn" id="mic" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>Speak</span></button>
+    <button class="btn pri" id="go">Add</button>
+    <button class="btn" id="manual">Fill in a form</button>
+  </div>
+  <div class="hint" id="mhint" style="margin-top:10px">You can also tap the microphone key on your phone's keyboard and talk.</div>
+  <div class="status" id="pstat"></div>
+  <div class="panel" id="review" hidden>
+    <h2 id="rvtitle">Check before saving</h2>
+    <div id="rvlist"></div>
+    <div class="btns"><button class="btn pri" id="save">Save</button><button class="btn" id="addrow">Add a line</button><button class="btn" id="cancel">Cancel</button></div>
+  </div>
+</section>
+
+<section>
+  <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><h2>Where it went</h2><button class="lnk" id="limbtn">Set monthly limits</button></div>
+  <div class="cats" id="cats"></div>
+  <div id="limits" hidden>
+    <p class="sub">Monthly limit for each category. Leave blank for no limit. These apply to every month and are shared by both phones.</p>
+    <div class="cats" id="limlist"></div>
+    <div class="btns"><button class="btn pri" id="limsave">Save limits</button><button class="btn" id="limcancel">Cancel</button></div>
+  </div>
+</section>
+
+<section style="border:0">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><h2>Activity</h2><button class="lnk" id="csv">Copy month as CSV</button></div>
+  <div class="chips" id="filter"></div>
+  <ul class="list" id="acts"></ul>
+  <div class="status" id="dstat"></div>
+</section>
+</main>
+</div>
+
+<script src="parse.js"></script>
+<script src="app.js"></script>
+</body></html>
